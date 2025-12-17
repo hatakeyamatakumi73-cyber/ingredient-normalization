@@ -106,7 +106,7 @@ def unify_once(file_name):
     def string_sim(a,b):
         return JaroWinkler.normalized_similarity(a,b)
 
-    alpha, beta, gamma = 0.450, 0.500, 0.050
+    alpha, beta, gamma = 0.600, 0.350, 0.050
     edges = []
 
     for (i,j), ce_s in zip(index_pairs, ce_scores):
@@ -120,7 +120,7 @@ def unify_once(file_name):
         t_j = terms[j]
         s_str = string_sim(t_i, t_j)
         score = alpha*ce_s + beta*cos_s + gamma*s_str
-        if score >= 0.7420:
+        if score >= 0.9014:
             edges.append((i, j, score))
 
     # グラフ化 → クラスタ化
