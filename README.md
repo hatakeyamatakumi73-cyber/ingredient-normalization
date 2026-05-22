@@ -14,7 +14,7 @@ Sentence-BERT / CrossEncoder / 文字類似度 / 読み仮名特徴を組み合�
 主に以下の手法を組み合わせています。
 
 - Sentence-BERT による意味類似度
-- Cross-Encoder による再ランキング
+- Cross-Encoder によるペア類似度判定
 - Jaro-Winkler による文字列類似度
 - 読み仮名・語尾特徴による補助スコア
 - グラフクラスタリングによる統合
@@ -38,24 +38,7 @@ Sentence-BERT / CrossEncoder / 文字類似度 / 読み仮名特徴を組み合�
 
 6. 代表語の決定  
    クラスタ内で頻度、文字列の長さ、中心性などを考慮して、統一後の代表名を決定する。
----
 
-## 📂 ディレクトリ構成
-
-ingredient-normalization/
-├ src/
-│ └ ingredient_norm/
-│ ├ delta.py # 統一処理本体
-│ └ param_search.py # パラメータ探索
-├ scripts/
-│ ├ run_delta.ps1
-│ └ run_param.ps1
-├ datasets/ # 入出力データ（gitignore）
-├ README.md
-└ .gitignore
-
-
----
 
 ## ⚙️ 使用技術
 
@@ -87,21 +70,50 @@ ingredient-normalization/
 
 ---
 
-### scores_{name}.pickle
 
-delta.py により計算された材料ペア間の類似度スコアです。
+## 📤 出力ファイル
 
-含まれる主な項目：
+`delta.py` を実行すると、以下のファイルが `datasets/` に生成されます。
+
+### synonym_ners_{name}.csv / synonym_ners_{name}.pickle
+
+材料名ごとの統一後の代表語を保存したファイルです。
+
+主なカラム：
+
+- name : 元の材料名
+- labels : 材料名に付与されたラベル
+- canonical_strict : 厳しめの基準で選択した代表語
+- canonical_freq : 頻度を考慮して選択した代表語
+- canonical : 最終的に採用した代表語
+
+### scores_{name}.csv / scores_{name}.pickle
+
+材料ペアごとの類似度スコアを保存したファイルです。
+
+主な項目：
 
 - term1 / term2 : 材料名ペア
-- ce_score      : CrossEncoder類似度
-- cos_score     : Sentence-BERT類似度
-- string_score  : 文字列類似度（Jaro-Winkler）
-- core_score    : 読み仮名特徴スコア
-- total_score   : 融合後スコア
-
-本ファイルは、param_search.py により
-パラメータ最適化の入力として使用されます。
+- ce_score : Cross-Encoderによるスコア
+- cos_score : Sentence-BERTによるコサイン類似度
+- string_score : Jaro-Winklerによる文字列類似度
+- core_score_dbg : 読み仮名・語尾特徴による補助スコア
+- total_score : 融合後スコア
 
 
+## 工夫した点
 
+### 全ペア比較を避ける候補生成
+
+材料名を全組み合わせで比較すると、材料数が増えるほど計算量が大きくなる。  
+そのため、本プロジェクトではまず Sentence-BERT による近傍探索、読みの先頭文字、語尾特徴を用いて候補ペアを絞り込んだ。  
+その後、絞り込んだ候補に対して Cross-Encoder を用いることで、計算量を抑えながら精度の高い判定を行う構成にした。
+
+### 文字列類似度だけに依存しない設計
+
+「しょうゆ / 醤油 / 正油」のように、表記は異なっていても同じ材料を表すケースがある。  
+そのため、Jaro-Winklerによる文字列類似度だけでなく、Sentence-BERTの意味類似度、Cross-Encoder、読み仮名特徴を組み合わせた。
+
+### グラフによる統合
+
+同一材料と判定されたペアを辺として扱い、NetworkXで連結成分を求めることで、複数の表記を1つのクラスタとしてまとめた。
