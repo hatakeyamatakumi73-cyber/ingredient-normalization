@@ -105,35 +105,3 @@ delta.py により計算された材料ペア間の類似度スコアです。
 
 
 
-
----
-
-## ▶️ 実行方法
-
-### ① 材料名統一（delta）
-
-```powershell
-.\scripts\run_delta.ps1
-
-または：
-
-python src/ingredient_norm/delta.py
-
-
-実行後：
-
-datasets/synonym_ners{name}.csv
-
-
-が生成されます。
-
-② パラメータ探索（param_search）
-.\scripts\run_param.ps1
-
-
-または：
-
-python src/ingredient_norm/param_search.py
-
-
-最適な α, β, γ, threshold が表示されます。
